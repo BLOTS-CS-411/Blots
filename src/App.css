@@ -1,0 +1,65 @@
+@import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700&family=Source+Sans+3:wght@400;600&display=swap');
+
+:root {
+  --paper: #eef2f7;
+  --ink: #14213d;
+  --muted: #4a5875;
+  --accent: #5b3fd1;
+  --accent-hover: #4a30b8;
+  --font-head: 'Bricolage Grotesque', system-ui, sans-serif;
+  --font-body: 'Source Sans 3', system-ui, sans-serif;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 1.125rem;
+  line-height: 1.6;
+}
+
+.page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1.5rem;
+}
+
+
+.top {
+  width: 100%;
+  max-width: 40rem;
+  text-align: center;
+}
+
+
+h1 {
+  font-family: var(--font-head);
+  font-size: clamp(1.6rem, 3vw, 2.2rem);
+  line-height: 1.25;
+  letter-spacing: 0;
+  margin: 0 0 1rem;
+}
+
+.top-text p {
+  max-width: 34rem;
+  color: var(--muted);
+  margin: 0 auto 2rem;
+}
+
+.cta {
+  font: 600 1.05rem var(--font-body);
+  color: #fff;
+  background: var(--accent);
+  border: 0;
+  border-radius: 999px;
+  padding: 0.85rem 2rem;
+  cursor: pointer;
+  transition: background 0.15s, transform 0.15s;
+}
+.cta:hover { background: var(--accent-hover); transform: translateY(-1px); }
+.cta:focus-visible { outline: 3px solid var(--ink); outline-offset: 3px; }
