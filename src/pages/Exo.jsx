@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom'
 
-function Learn() {
+function Exo() {
   const navigate = useNavigate()
   return (
     <main className="page">
@@ -9,13 +9,12 @@ function Learn() {
           <h1>Start Learning</h1>
 
           <p>
-            In this section, you'll learn how chromosome 15 is involved
-            in Angelman and Prader-Willi syndromes.
+            Hello
           </p>
           <button
             className="cta"
             type="button"
-            onClick={() => navigate('/exo')}
+            onClick={() => navigate()}
           >
             Start learning
           </button>
@@ -25,4 +24,4 @@ function Learn() {
   )
 }
 
-export default Learn
+export default Exo
