@@ -1,0 +1,109 @@
+/* Scoped to .exo so it won't fight your global .page / .cta rules */
+.exo {
+  --gel: #10233a;
+  --band: #b8e6f2;
+  --ink: #1d2733;
+  --line: #cfd8e0;
+  --ok: #0f766e;
+  --ko: #b42318;
+  --focus: #3b5bdb;
+}
+
+.exo .top-text {
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 0 16px 48px;
+  color: var(--ink);
+}
+
+.exo .exo-help {
+  margin: 16px 0 24px;
+  padding: 10px 14px;
+  border-left: 3px solid var(--focus);
+  background: #f2f5fb;
+  max-width: 72ch;
+}
+.exo .exo-help summary { cursor: pointer; font-weight: 600; }
+.exo .exo-help ul { margin: 10px 0 2px; padding-left: 18px; line-height: 1.5; }
+
+.exo .exo-cases {
+  display: grid;
+  gap: 20px;
+}
+
+.exo .exo-case {
+  border: 2px solid var(--line);
+  border-radius: 6px;
+  padding: 16px;
+  background: #fff;
+  transition: border-color 0.2s;
+}
+.exo .exo-case.ok { border-color: var(--ok); }
+.exo .exo-case.ko { border-color: var(--ko); }
+.exo .exo-case h2 { margin: 0 0 12px; font-size: 1.15rem; }
+
+.exo .exo-figs {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 16px;
+}
+.exo figure { margin: 0; }
+.exo figcaption { font-size: 0.9rem; font-weight: 600; margin-bottom: 4px; }
+.exo .exo-fig { width: 100%; height: auto; display: block; }
+
+/* figure internals */
+.exo .gel-bg { fill: var(--gel); }
+.exo .band { fill: var(--band); }
+.exo .fig-txt { font: 10px system-ui, sans-serif; fill: var(--ink); }
+.exo .fig-txt.strong { font-weight: 700; font-size: 11px; }
+.exo .fig-txt.small { font-size: 8.5px; }
+.exo .peak { fill: none; stroke: var(--ink); stroke-width: 1.6; }
+.exo .baseline { stroke: var(--ink); stroke-width: 1; }
+.exo .divider { stroke: var(--line); stroke-dasharray: 3 3; }
+
+.exo .exo-pick { display: grid; gap: 4px; margin-top: 14px; max-width: 380px; }
+.exo .exo-pick span { font-size: 0.9rem; font-weight: 600; }
+.exo .exo-pick select {
+  padding: 8px 10px;
+  font: inherit;
+  border: 1px solid #8a97a5;
+  border-radius: 4px;
+  background: #fff;
+}
+.exo select:focus-visible,
+.exo button:focus-visible,
+.exo summary:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+
+.exo .exo-verdict { margin: 10px 0 0; font-weight: 700; }
+.exo .exo-case.ok .exo-verdict { color: var(--ok); }
+.exo .exo-case.ko .exo-verdict { color: var(--ko); }
+.exo .exo-explain { margin: 8px 0 0; line-height: 1.5; max-width: 80ch; }
+
+.exo .exo-actions { display: flex; flex-wrap: wrap; gap: 12px; margin: 24px 0 8px; }
+.exo .exo-btn {
+  padding: 10px 16px;
+  font: inherit;
+  border: 1px solid #8a97a5;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--ink);
+  cursor: pointer;
+}
+.exo .cta:disabled { opacity: 0.45; cursor: not-allowed; }
+.exo .exo-score { font-weight: 700; margin: 8px 0 24px; }
+
+/* probe map */
+.exo .exo-probe {
+  display: grid;
+  grid-template-columns: minmax(280px, 420px) 1fr;
+  gap: 20px;
+  align-items: center;
+  margin-bottom: 24px;
+}
+@media (max-width: 720px) { .exo .exo-probe { grid-template-columns: 1fr; } }
+.exo .exo-probe p { margin: 0; line-height: 1.5; max-width: 60ch; }
+.exo .genome { stroke: var(--ink); stroke-width: 2; }
+.exo .tick { stroke: var(--ink); stroke-width: 2; }
+.exo .span { stroke: #8a97a5; stroke-width: 1.5; }
+.exo .probe { fill: #c2410c; }
+.exo .probe-txt { fill: #c2410c; font-weight: 700; }
