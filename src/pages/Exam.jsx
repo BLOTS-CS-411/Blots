@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom'
 
-function Exo() {
+function Exam() {
   const navigate = useNavigate()
   return (
     <main className="page">
@@ -9,12 +9,12 @@ function Exo() {
           <h1>Start Learning</h1>
 
           <p>
-            Hello
+            Hello wow
           </p>
           <button
             className="cta"
             type="button"
-            onClick={() => navigate('/exam')}
+            onClick={() => navigate('/end')}
           >
             Start learning
           </button>
@@ -24,4 +24,4 @@ function Exo() {
   )
 }
 
-export default Exo
+export default Exam
