@@ -7,11 +7,11 @@ function Home() {
     <main className="page">
       <section className="top">
         <div className="top-text">
-          <h1>Learn to diagnose Angelman and Prader-Willi syndromes</h1>
+          <h1>Learn to diagnose Angelman syndromes</h1>
 
           <p>
             Find out how Southern blotting and microsatellite analysis reveal
-            the changes on chromosome 15 behind these two conditions.
+            the changes on chromosome 15 behind this disease.
           </p>
 
           <button
