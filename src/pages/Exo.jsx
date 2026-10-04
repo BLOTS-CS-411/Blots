@@ -1,4 +1,5 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { logEvent } from '../logger'
 import { useNavigate } from 'react-router-dom'
 import './Exo.css'
 
@@ -179,7 +180,16 @@ function shuffle(arr) {
 }
 
 function Exo() {
+  const startTime = useRef(Date.now())
+  const started = useRef(false)
   const navigate = useNavigate()
+
+  useEffect(() => {
+  if (started.current) return
+  started.current = true
+  logEvent('session_started')
+}, [])
+
   const order = useMemo(() => shuffle(CASES.map((_, i) => i)), [])
   const [picks, setPicks] = useState({})
   const [checked, setChecked] = useState(false)
@@ -197,11 +207,39 @@ function Exo() {
       else delete next[id]
       return next
     })
+    if (key) {
+      logEvent('case_answered', {
+        case: 'ABCD'[order.indexOf(id)],   // position shown to participant
+        caseId: id,                        // stable id of the case
+        selected: key,
+        correct: key === CASES[id].answer,
+      })
+    }
+
   }
   const reset = () => {
     setPicks({})
     setChecked(false)
     setRevealed(false)
+  }
+  const handleCheck = () => {
+    setChecked(true)
+    logEvent('check_answers', { score, total: CASES.length })
+  }
+
+  const handleReveal = () => {
+    setRevealed(true)
+    logEvent('answers_revealed', { usedShowAnswers: true })
+  }
+
+  const handleNext = () => {
+    logEvent('session_completed', {
+      finalScore: score,
+      total: CASES.length,
+      usedShowAnswers: revealed,
+      totalSeconds: Math.round((Date.now() - startTime.current) / 1000),
+    })
+    navigate('/exam')
   }
 
   return (
@@ -304,11 +342,11 @@ function Exo() {
               className="cta"
               type="button"
               disabled={!allPicked}
-              onClick={() => setChecked(true)}
+              onClick={handleCheck}
             >
               Check my answers
             </button>
-            <button className="exo-btn" type="button" onClick={() => setRevealed(true)}>
+            <button className="exo-btn" type="button" onClick={handleReveal}>
               Show answers
             </button>
             <button className="exo-btn" type="button" onClick={reset}>
@@ -322,8 +360,8 @@ function Exo() {
             </p>
           )}
 
-          <button className="cta" type="button" onClick={() => navigate('/exam')}>
-            Start learning
+          <button className="cta" type="button" onClick={handleNext}>
+            Next
           </button>
         </div>
       </section>
