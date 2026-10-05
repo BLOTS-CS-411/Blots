@@ -1,0 +1,126 @@
+/* Scoped to .learn so it won't fight your global .page / .cta rules */
+.learn {
+  --gel: #10233a;
+  --band: #b8e6f2;
+  --ink: #1d2733;
+  --line: #cfd8e0;
+  --focus: #3b5bdb;
+  --mat: #a8325e;
+  --pat: #3b5bdb;
+  --probe: #c2410c;
+  scroll-padding-top: 16px;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  html { scroll-behavior: smooth; }
+}
+
+.learn .top-text {
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 0 16px 64px;
+  color: var(--ink);
+}
+
+.learn .learn-lead { font-size: 1.15rem; line-height: 1.5; max-width: 62ch; }
+
+/* in-page navigation */
+.learn .learn-toc {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 20px;
+  margin: 24px 0 8px;
+  padding: 12px 0;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+.learn .learn-toc a { color: var(--ink); font-weight: 600; }
+.learn a:focus-visible,
+.learn button:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+
+/* sections */
+.learn .learn-sec { margin-top: 56px; }
+.learn .learn-sec h2 { font-size: 1.7rem; margin: 0 0 16px; }
+.learn .learn-sec h3 { font-size: 1.1rem; margin: 28px 0 8px; }
+.learn .learn-sec p,
+.learn .learn-list { line-height: 1.6; max-width: 70ch; }
+.learn .learn-list { padding-left: 22px; }
+.learn .learn-list li { margin-bottom: 8px; }
+
+.learn .learn-note {
+  padding: 10px 14px;
+  border-left: 3px solid var(--focus);
+  background: #f2f5fb;
+}
+
+/* figures */
+.learn .learn-figure { margin: 24px 0; max-width: 460px; }
+.learn figcaption { font-size: 0.9rem; font-weight: 600; margin-bottom: 6px; }
+.learn .learn-fig { width: 100%; height: auto; display: block; }
+
+.learn .fig-txt { font: 10px system-ui, sans-serif; fill: var(--ink); }
+.learn .fig-txt.strong { font-weight: 700; font-size: 11px; }
+.learn .fig-txt.small { font-size: 8.5px; }
+
+.learn .gel-bg { fill: var(--gel); }
+.learn .band { fill: var(--band); }
+.learn .peak { fill: none; stroke: var(--ink); stroke-width: 1.6; }
+.learn .baseline { stroke: var(--ink); stroke-width: 1; }
+.learn .divider { stroke: var(--line); stroke-dasharray: 3 3; }
+
+.learn .genome { stroke: var(--ink); stroke-width: 2; }
+.learn .tick { stroke: var(--ink); stroke-width: 2; }
+.learn .span { stroke: #8a97a5; stroke-width: 1.5; }
+.learn .probe { fill: var(--probe); }
+.learn .probe-txt { fill: var(--probe); font-weight: 700; }
+
+/* chromosome figure */
+.learn .chr.mat { fill: var(--mat); }
+.learn .chr.pat { fill: var(--pat); }
+.learn .chr-gap { fill: #fff; }
+.learn .gene.active { fill: #fff; stroke: var(--ink); stroke-width: 1.5; }
+.learn .gene.silent { fill: #e3e8ee; stroke: var(--ink); stroke-width: 1.5; stroke-dasharray: 2.5 2; }
+.learn .gene-x { stroke: var(--ink); stroke-width: 2; }
+
+.learn .learn-key { display: flex; align-items: center; gap: 8px; font-size: 0.85rem; margin: 6px 0 0; }
+.learn .swatch {
+  width: 12px; height: 12px; border-radius: 50%;
+  border: 1.5px solid var(--ink); display: inline-block;
+}
+.learn .swatch.active { background: #fff; }
+.learn .swatch.silent { background: #e3e8ee; border-style: dashed; margin-left: 12px; }
+
+/* mechanism cards */
+.learn .learn-mech {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 20px;
+  margin: 24px 0;
+}
+.learn .learn-card {
+  border: 2px solid var(--line);
+  border-radius: 6px;
+  padding: 16px;
+  background: #fff;
+}
+.learn .learn-card h3 { margin: 0; }
+.learn .learn-card .learn-freq { margin: 2px 0 10px; font-size: 0.9rem; color: #5a6877; }
+.learn .learn-card p { margin: 10px 0 0; }
+
+/* summary table */
+.learn .learn-table-wrap { overflow-x: auto; margin: 20px 0 32px; }
+.learn .learn-table { border-collapse: collapse; width: 100%; min-width: 560px; }
+.learn .learn-table th,
+.learn .learn-table td {
+  text-align: left;
+  vertical-align: top;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--line);
+  line-height: 1.45;
+}
+.learn .learn-table thead th { border-bottom: 2px solid var(--ink); }
+
+.learn .sr-only {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
+}
