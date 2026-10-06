@@ -41,6 +41,7 @@
 .exo .exo-case.ok { border-color: var(--ok); }
 .exo .exo-case.ko { border-color: var(--ko); }
 .exo .exo-case h2 { margin: 0 0 12px; font-size: 1.15rem; }
+.exo .exo-clinical { margin: -4px 0 12px; font-size: 0.9rem; font-style: italic; }
 
 .exo .exo-figs {
   display: grid;
@@ -107,3 +108,64 @@
 .exo .span { stroke: #8a97a5; stroke-width: 1.5; }
 .exo .probe { fill: #c2410c; }
 .exo .probe-txt { fill: #c2410c; font-weight: 700; }
+
+/* AI popup, pinned to the bottom right */
+.exo .exo-chat {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  width: min(360px, calc(100vw - 32px));
+  max-height: 60vh;
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+  border: 1px solid #8a97a5;
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(16, 35, 58, 0.25);
+  z-index: 1000;
+  animation: exo-chat-in 0.25s ease-out;
+}
+@keyframes exo-chat-in {
+  from { transform: translateY(24px); opacity: 0; }
+  to { transform: none; opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .exo .exo-chat { animation: none; }
+}
+.exo .exo-chat-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 14px;
+  background: var(--gel);
+  color: #fff;
+  border-radius: 8px 8px 0 0;
+}
+.exo .exo-chat-close {
+  background: none;
+  border: 0;
+  color: #fff;
+  font-size: 1.4rem;
+  line-height: 1;
+  cursor: pointer;
+}
+.exo .exo-chat-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px;
+  display: grid;
+  gap: 8px;
+  align-content: start;
+}
+.exo .exo-msg { margin: 0; padding: 8px 12px; border-radius: 12px; max-width: 85%; line-height: 1.4; }
+.exo .exo-msg.ai { background: #eef2f7; justify-self: start; }
+.exo .exo-msg.user { background: var(--focus); color: #fff; justify-self: end; }
+.exo .exo-chat-form { display: flex; gap: 8px; padding: 10px; border-top: 1px solid var(--line); }
+.exo .exo-chat-form input {
+  flex: 1;
+  padding: 8px 10px;
+  font: inherit;
+  border: 1px solid #8a97a5;
+  border-radius: 4px;
+}
+.exo .exo-chat-form input:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
