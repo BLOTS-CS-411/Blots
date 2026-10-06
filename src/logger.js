@@ -41,6 +41,24 @@ function summaryFor(type, data) {
         totalSeconds: data.totalSeconds,
         usedShowAnswers: data.usedShowAnswers,
       }
+    // Exam results live under `exam` so they never overwrite the Exo fields
+    case 'exam_started':
+      return { exam: { startedAt: serverTimestamp(), completed: false } }
+    case 'exam_submitted':
+      return {
+        exam: {
+          completed: true,
+          submittedAt: serverTimestamp(),
+          part1Score: data.part1Score,
+          part1Total: data.part1Total,
+          graphScore: data.graphScore,
+          graphTotal: data.graphTotal,
+          totalSeconds: data.totalSeconds,
+          answers: data.answers,
+        },
+      }
+    case 'exam_finished':
+      return { exam: { finishedAt: serverTimestamp(), reviewSeconds: data.reviewSeconds } }
     default:
       return {}
   }
