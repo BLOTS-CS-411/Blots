@@ -29,13 +29,6 @@ const MECHANISMS = [
   },
 ]
 
-const SUMMARY = [
-  { cause: 'Point mutation of UBE3A', blot: 'Methylation present (4.2 kb + 0.9 kb)', ms: 'Both parents contribute' },
-  { cause: 'Maternal deletion', blot: 'Methylation absent, bands at half intensity', ms: 'No maternal allele in the critical region only' },
-  { cause: 'Paternal uniparental disomy', blot: 'Methylation absent', ms: 'Only paternal alleles, everywhere' },
-  { cause: 'Imprinting error', blot: 'Methylation absent', ms: 'Both parents contribute' },
-]
-
 /* ---------- Figure: chromosomes 15 and the UBE3A copy ---------- */
 function Chromosomes({ kind }) {
   // each chromosome: whose DNA it is (mat/pat) and the state of its UBE3A copy
@@ -213,7 +206,6 @@ function Learn() {
             <a href="#mechanisms">Four mechanisms</a>
             <a href="#microsatellites">Microsatellites</a>
             <a href="#southern">Southern blot</a>
-            <a href="#together">Putting it together</a>
           </nav>
 
           {/* ---- The disease ---- */}
@@ -386,45 +378,17 @@ function Learn() {
             </p>
           </section>
 
-          {/* ---- Together ---- */}
-          <section id="together" className="learn-sec">
-            <h2>Putting it together</h2>
-            <p>
-              Start with the Southern blot: is there methylation? If yes, the
-              imprint is normal and the cause is probably a point mutation in
-              UBE3A. If not, use the microsatellites to find which of the three
-              remaining causes it is.
-            </p>
-            <div className="learn-table-wrap">
-              <table className="learn-table">
-                <caption className="sr-only">Expected results for each cause</caption>
-                <thead>
-                  <tr>
-                    <th scope="col">Cause</th>
-                    <th scope="col">Southern blot</th>
-                    <th scope="col">Microsatellites</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {SUMMARY.map((r) => (
-                    <tr key={r.cause}>
-                      <th scope="row">{r.cause}</th>
-                      <td>{r.blot}</td>
-                      <td>{r.ms}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+          {/* ---- Practice ---- */}
+          <section id="practice" className="learn-sec learn-practice">
+            <h2>Now time to practice!</h2>
+            <button
+              className="cta"
+              type="button"
+              onClick={() => navigate('/exo')}
+            >
+              Start the exercise
+            </button>
           </section>
-
-          <button
-            className="cta"
-            type="button"
-            onClick={() => navigate('/exo')}
-          >
-            Start the exercise
-          </button>
         </div>
       </section>
     </main>
