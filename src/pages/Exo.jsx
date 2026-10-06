@@ -195,8 +195,7 @@ function Exo() {
   const [checked, setChecked] = useState(false)
   const [revealed, setRevealed] = useState(false)
 
-  const used = Object.values(picks)
-  const allPicked = used.length === CASES.length
+  const allPicked = Object.keys(picks).length === CASES.length
   const score = order.filter((id) => picks[id] === CASES[id].answer).length
 
   const pick = (id, key) => {
@@ -308,11 +307,7 @@ function Exo() {
                     >
                       <option value="">Choose…</option>
                       {INTERPRETATIONS.map((it) => (
-                        <option
-                          key={it.key}
-                          value={it.key}
-                          disabled={used.includes(it.key) && picks[id] !== it.key}
-                        >
+                        <option key={it.key} value={it.key}>
                           {it.label}
                         </option>
                       ))}
