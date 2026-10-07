@@ -1,0 +1,69 @@
+.pretest {
+  --line: #cfd8e0;
+  --focus: #3b5bdb;
+  align-items: flex-start;
+}
+
+.pretest .top { max-width: 46rem; text-align: left; }
+.pretest .top-text > p { margin-left: 0; margin-right: 0; max-width: 40rem; }
+
+.pretest .pretest-progress {
+  height: 8px;
+  background: #dde4ee;
+  border-radius: 999px;
+  overflow: hidden;
+}
+.pretest .pretest-progress-bar {
+  height: 100%;
+  background: var(--accent);
+  transition: width 0.2s;
+}
+.pretest .pretest-count { margin: 6px 0 24px; font-size: 0.95rem; }
+
+.pretest .pretest-list { list-style: none; padding: 0; margin: 0 0 24px; }
+.pretest .pretest-list li { margin-bottom: 20px; }
+
+.pretest .pretest-q {
+  border: 2px solid var(--line);
+  border-radius: 6px;
+  background: #fff;
+  padding: 16px;
+  margin: 0;
+}
+.pretest .pretest-q legend {
+  float: left;          /* stops the browser pinning it to the border */
+  width: 100%;
+  padding: 0;
+  margin: 0 0 4px;
+}
+.pretest .pretest-q legend + .pretest-opt { clear: both; } /* first option starts below the question */
+
+.pretest .pretest-topic {
+  display: block;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+}
+.pretest .pretest-text { display: block; font-weight: 600; margin-bottom: 4px; }
+
+.pretest .pretest-opt {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 8px 10px;
+  margin-top: 6px;
+  border: 1.5px solid transparent;
+  border-radius: 6px;
+  cursor: pointer;
+  line-height: 1.4;
+}
+.pretest .pretest-opt:hover { background: #f2f5fb; }
+.pretest .pretest-opt.on { border-color: var(--accent); background: #f2f5fb; }
+.pretest .pretest-opt.dk { color: var(--muted); font-style: italic; }
+.pretest .pretest-opt input { margin-top: 5px; accent-color: var(--accent); }
+.pretest .pretest-opt:has(input:focus-visible) { outline: 3px solid var(--focus); outline-offset: 2px; }
+
+.pretest .cta:disabled { background: #a9b1c4; cursor: not-allowed; transform: none; }
+.pretest .pretest-hint { margin: 10px 0 0; font-size: 0.95rem; }

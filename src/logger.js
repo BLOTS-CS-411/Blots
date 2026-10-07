@@ -27,6 +27,14 @@ function summaryFor(type, data) {
   switch (type) {
     case 'session_started':
       return { startedAt: serverTimestamp(), completed: false, checkCount: 0, usedShowAnswers: false }
+    case 'pretest_completed':
+      return {pretest: {
+      answers: data.answers,
+      score: data.score,
+      total: data.total,
+      dontKnow: data.dontKnow,
+    },
+  }
     case 'case_answered':
       return { answers: { [data.case]: { selected: data.selected, correct: data.correct, caseId: data.caseId } } }
     case 'check_answers':
