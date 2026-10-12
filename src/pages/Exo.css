@@ -80,7 +80,23 @@
 .exo .exo-case.ko .exo-verdict { color: var(--ko); }
 .exo .exo-explain { margin: 8px 0 0; line-height: 1.5; max-width: 80ch; }
 
-.exo .exo-actions { display: flex; flex-wrap: wrap; gap: 12px; margin: 24px 0 8px; }
+.exo .exo-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 16px;
+  margin: 24px 0 8px;
+}
+
+.exo .exo-actions .exo-score {
+  margin: 0;           /* overrides the old 8px 0 24px that pushed it out of line */
+  min-width: 120px;
+}
+
+.exo .exo-actions .exo-next {
+  margin-left: auto;   /* Next goes to the far right */
+}
+
 .exo .exo-btn {
   padding: 10px 16px;
   font: inherit;
