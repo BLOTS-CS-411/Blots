@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { logEvent } from '../logger'
+import { logEvent, getCondition } from '../logger'
 import { useNavigate } from 'react-router-dom'
 import './Exo.css'
 
@@ -199,6 +199,7 @@ function Exo() {
   const startTime = useRef(Date.now())
   const started = useRef(false)
   const navigate = useNavigate()
+  const aiEnabled = getCondition() !== 'A'   // Default AI, other A is the control version
 
   useEffect(() => {
     if (started.current) return
@@ -209,7 +210,6 @@ function Exo() {
   const order = useMemo(() => shuffle(CASES.map((_, i) => i)), [])
   const [picks, setPicks] = useState({})
   const [checked, setChecked] = useState(false)
-  const [revealed, setRevealed] = useState(false)
 
   // AI popup (placeholder: always answers "not implemented")
   const [chat, setChat] = useState({ open: false, messages: [] })
@@ -241,17 +241,10 @@ function Exo() {
     }
   }
 
-  const reset = () => {
-    setPicks({})
-    setChecked(false)
-    setRevealed(false)
-    setChat({ open: false, messages: [] })
-    setDraft('')
-  }
-
   const handleCheck = () => {
     setChecked(true)
     logEvent('check_answers', { score, total: CASES.length })
+    if (!aiEnabled) return   // version A: no chatbot
 
     // Ask about a wrong answer if there is one, otherwise pick any case at random
     const wrong = order.filter((id) => picks[id] !== CASES[id].answer)
@@ -288,16 +281,10 @@ function Exo() {
     setDraft('')
   }
 
-  const handleReveal = () => {
-    setRevealed(true)
-    logEvent('answers_revealed', { usedShowAnswers: true })
-  }
-
   const handleNext = () => {
     logEvent('session_completed', {
       finalScore: score,
       total: CASES.length,
-      usedShowAnswers: revealed,
       totalSeconds: Math.round((Date.now() - startTime.current) / 1000),
     })
     navigate('/exam')
@@ -385,7 +372,7 @@ function Exo() {
                       {ok ? 'Correct.' : 'Not quite. Look at the figures again.'}
                     </p>
                   )}
-                  {(revealed || (checked && ok)) && (
+                  {!aiEnabled && checked && picks[id] && (
                     <p className="exo-explain">
                       <strong>
                         {INTERPRETATIONS.find((i) => i.key === c.answer).label}.
@@ -407,27 +394,19 @@ function Exo() {
             >
               Check my answers
             </button>
-            <button className="exo-btn" type="button" onClick={handleReveal}>
-              Show answers
-            </button>
-            <button className="exo-btn" type="button" onClick={reset}>
-              Start over
-            </button>
-          </div>
 
-          {checked && (
             <p className="exo-score" role="status">
-              {score} / {CASES.length} correct
+              {checked ? `${score} / ${CASES.length} correct` : '\u00A0'}
             </p>
-          )}
-
-          <button className="cta" type="button" onClick={handleNext}>
+                
+          <button className="cta exo-next" type="button" disabled={!allPicked} onClick={handleNext}>
             Next
           </button>
+          </div>
         </div>
       </section>
 
-      {chat.open && (
+      {aiEnabled && chat.open && (
         <aside className="exo-chat" aria-label="AI assistant">
           <header className="exo-chat-head">
             <strong>AI assistant</strong>
