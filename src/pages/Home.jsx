@@ -17,7 +17,7 @@ function Home() {
           <button
             className="cta"
             type="button"
-            onClick={() => navigate('/learn')}
+            onClick={() => navigate('/pretest')}
           >
             Start learning
           </button>

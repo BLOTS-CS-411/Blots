@@ -5,6 +5,7 @@ import Learn from './pages/Learn'
 import Exo from './pages/Exo'
 import Exam from './pages/Exam'
 import End from './pages/End'
+import Pretest from './pages/Pretest'
 
 import './App.css'
 
@@ -13,6 +14,7 @@ function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<Home />} />
+        <Route path="/pretest" element={<Pretest />} />
         <Route path="/learn" element={<Learn />} />
         <Route path="/exo" element={<Exo />} />
         <Route path="/exam" element={<Exam />} />

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { logEvent } from '../logger'
+import { logEvent, getCondition } from '../logger'
 import { useNavigate } from 'react-router-dom'
 import './Exo.css'
 
@@ -9,9 +9,13 @@ const INTERPRETATIONS = [
   { key: 'upd', label: 'Paternal uniparental disomy' },
   { key: 'del', label: 'Maternal deletion' },
   { key: 'imprint', label: 'Imprinting error' },
+  { key: 'normal', label: 'Normal (no genetic abnormality)' },
 ]
 
+const LETTERS = 'ABCDE'
+
 /* ---------- Data for each case ----------
+   affected: whether the child shows Angelman syndrome symptoms
    gel: per person, [XbaI lane, XbaI+NotI lane], each lane = [4.2 kb, 0.9 kb]
         0 = no band, 1 = thin band, 2 = thick band
    ms:  allele positions per marker (same number = homozygous, merged in one tall peak) */
@@ -24,6 +28,7 @@ const PARENT_MS = {
 const CASES = [
   {
     answer: 'ube3a',
+    affected: true,
     gel: { ...PARENT_GEL, child: [[2, 0], [1, 1]] },
     ms: { ...PARENT_MS, child: { crit: [1, 4], out: [1, 2] } },
     explain:
@@ -31,6 +36,7 @@ const CASES = [
   },
   {
     answer: 'upd',
+    affected: true,
     gel: { ...PARENT_GEL, child: [[2, 0], [0, 2]] },
     ms: { ...PARENT_MS, child: { crit: [1, 2], out: [1, 3] } },
     explain:
@@ -38,6 +44,7 @@ const CASES = [
   },
   {
     answer: 'del',
+    affected: true,
     gel: { ...PARENT_GEL, child: [[1, 0], [0, 1]] },
     ms: { ...PARENT_MS, child: { crit: [1], out: [1, 2] } },
     explain:
@@ -45,10 +52,19 @@ const CASES = [
   },
   {
     answer: 'imprint',
+    affected: true,
     gel: { ...PARENT_GEL, child: [[2, 0], [0, 2]] },
     ms: { ...PARENT_MS, child: { crit: [2, 3], out: [2, 3] } },
     explain:
       'Southern blot: methylation is absent. Microsatellites: both parents contribute.',
+  },
+  {
+    answer: 'normal',
+    affected: false,
+    gel: { ...PARENT_GEL, child: [[2, 0], [1, 1]] },
+    ms: { ...PARENT_MS, child: { crit: [1, 3], out: [2, 3] } },
+    explain:
+      'Southern blot: same pattern as the parents, so one methylated (maternal) and one unmethylated (paternal) allele are present. Microsatellites: both parents contribute inside and outside the critical region. The child has no clinical signs, so there is no abnormality.',
   },
 ]
 
@@ -183,17 +199,26 @@ function Exo() {
   const startTime = useRef(Date.now())
   const started = useRef(false)
   const navigate = useNavigate()
+  const aiEnabled = getCondition() !== 'A'   // Default AI, other A is the control version
 
   useEffect(() => {
-  if (started.current) return
-  started.current = true
-  logEvent('session_started')
-}, [])
+    if (started.current) return
+    started.current = true
+    logEvent('session_started')
+  }, [])
 
   const order = useMemo(() => shuffle(CASES.map((_, i) => i)), [])
   const [picks, setPicks] = useState({})
   const [checked, setChecked] = useState(false)
-  const [revealed, setRevealed] = useState(false)
+
+  // AI popup (placeholder: always answers "not implemented")
+  const [chat, setChat] = useState({ open: false, messages: [] })
+  const [draft, setDraft] = useState('')
+  const chatEnd = useRef(null)
+
+  useEffect(() => {
+    chatEnd.current?.scrollIntoView({ behavior: 'smooth' })
+  }, [chat.messages, chat.open])
 
   const allPicked = Object.keys(picks).length === CASES.length
   const score = order.filter((id) => picks[id] === CASES[id].answer).length
@@ -208,34 +233,58 @@ function Exo() {
     })
     if (key) {
       logEvent('case_answered', {
-        case: 'ABCD'[order.indexOf(id)],   // position shown to participant
-        caseId: id,                        // stable id of the case
+        case: LETTERS[order.indexOf(id)], // position shown to participant
+        caseId: id,                       // stable id of the case
         selected: key,
         correct: key === CASES[id].answer,
       })
     }
+  }
 
-  }
-  const reset = () => {
-    setPicks({})
-    setChecked(false)
-    setRevealed(false)
-  }
   const handleCheck = () => {
     setChecked(true)
     logEvent('check_answers', { score, total: CASES.length })
+    if (!aiEnabled) return   // version A: no chatbot
+
+    // Ask about a wrong answer if there is one, otherwise pick any case at random
+    const wrong = order.filter((id) => picks[id] !== CASES[id].answer)
+    const pool = wrong.length ? wrong : order
+    const askedId = pool[Math.floor(Math.random() * pool.length)]
+    const letter = LETTERS[order.indexOf(askedId)] // letter as shown to the participant
+    setChat((c) => ({
+      open: true,
+      messages: [
+        ...c.messages,
+        { from: 'ai', text: `Could you please explain your reasoning for case ${letter}?` },
+      ],
+    }))
+    logEvent('chatbot_prompted', {
+      case: letter,
+      caseId: askedId,
+      wasWrong: wrong.length > 0,
+    })
   }
 
-  const handleReveal = () => {
-    setRevealed(true)
-    logEvent('answers_revealed', { usedShowAnswers: true })
+  const sendChat = (e) => {
+    e.preventDefault()
+    const text = draft.trim()
+    if (!text) return
+    setChat((c) => ({
+      ...c,
+      messages: [
+        ...c.messages,
+        { from: 'user', text },
+        { from: 'ai', text: 'Chatbot is not implemented yet' },
+      ],
+    }))
+    logEvent('chatbot_message', { length: text.length })
+    setDraft('')
   }
 
   const handleNext = () => {
     logEvent('session_completed', {
       finalScore: score,
       total: CASES.length,
-      usedShowAnswers: revealed,
       totalSeconds: Math.round((Date.now() - startTime.current) / 1000),
     })
     navigate('/exam')
@@ -247,8 +296,9 @@ function Exo() {
         <div className="top-text">
           <h1>Exo · Angelman syndrome</h1>
           <p>
-            4 children have Angelman syndrome (loss of function of a gene called UBE3A located on chromosome 15). For each one, read the Southern
-            blot and the microsatellite analysis, then choose the right molecular cause.
+            5 children are tested for Angelman syndrome (loss of function of a gene called UBE3A
+            located on chromosome 15). For each one, read the Southern blot and the microsatellite
+            analysis, then choose the right interpretation.
           </p>
 
           <details className="exo-help">
@@ -287,7 +337,10 @@ function Exo() {
               const state = checked && picks[id] ? (ok ? 'ok' : 'ko') : ''
               return (
                 <article key={id} className={`exo-case ${state}`}>
-                  <h2>Case {'ABCD'[n]}</h2>
+                  <h2>Case {LETTERS[n]}</h2>
+                  <p className="exo-clinical">
+                    Clinical status: {c.affected ? 'Angelman syndrome symptoms' : 'no symptoms'}
+                  </p>
                   <div className="exo-figs">
                     <figure>
                       <figcaption>Southern blot</figcaption>
@@ -319,7 +372,7 @@ function Exo() {
                       {ok ? 'Correct.' : 'Not quite. Look at the figures again.'}
                     </p>
                   )}
-                  {(revealed || (checked && ok)) && (
+                  {!aiEnabled && checked && picks[id] && (
                     <p className="exo-explain">
                       <strong>
                         {INTERPRETATIONS.find((i) => i.key === c.answer).label}.
@@ -341,25 +394,49 @@ function Exo() {
             >
               Check my answers
             </button>
-            <button className="exo-btn" type="button" onClick={handleReveal}>
-              Show answers
-            </button>
-            <button className="exo-btn" type="button" onClick={reset}>
-              Start over
-            </button>
-          </div>
 
-          {checked && (
             <p className="exo-score" role="status">
-              {score} / {CASES.length} correct
+              {checked ? `${score} / ${CASES.length} correct` : '\u00A0'}
             </p>
-          )}
-
-          <button className="cta" type="button" onClick={handleNext}>
+                
+          <button className="cta exo-next" type="button" disabled={!allPicked} onClick={handleNext}>
             Next
           </button>
+          </div>
         </div>
       </section>
+
+      {aiEnabled && chat.open && (
+        <aside className="exo-chat" aria-label="AI assistant">
+          <header className="exo-chat-head">
+            <strong>AI assistant</strong>
+            <button
+              type="button"
+              className="exo-chat-close"
+              aria-label="Close assistant"
+              onClick={() => setChat((c) => ({ ...c, open: false }))}
+            >
+              ×
+            </button>
+          </header>
+          <div className="exo-chat-body" role="log" aria-live="polite">
+            {chat.messages.map((m, i) => (
+              <p key={i} className={`exo-msg ${m.from}`}>{m.text}</p>
+            ))}
+            <div ref={chatEnd} />
+          </div>
+          <form className="exo-chat-form" onSubmit={sendChat}>
+            <input
+              type="text"
+              value={draft}
+              onChange={(e) => setDraft(e.target.value)}
+              placeholder="Type your explanation…"
+              aria-label="Your explanation"
+            />
+            <button type="submit" className="exo-btn">Send</button>
+          </form>
+        </aside>
+      )}
     </main>
   )
 }

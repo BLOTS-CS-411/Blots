@@ -10,7 +10,7 @@ const store = (key, fallback) => {
 
 function getIdentity() {
   const participant = store('p', 'unknown')
-  const condition = store('c', 'unknown')
+  const condition = store('c', 'B') //AI is default
   const sessionId = store('sid', `${participant}_${condition}_${Date.now().toString(36)}`)
   const start = Number(store('sstart', String(Date.now())))
   return { participant, condition, sessionId, start }
@@ -26,20 +26,25 @@ function nextSeq() {
 function summaryFor(type, data) {
   switch (type) {
     case 'session_started':
-      return { startedAt: serverTimestamp(), completed: false, checkCount: 0, usedShowAnswers: false }
+      return { startedAt: serverTimestamp(), completed: false, checkCount: 0}
+    case 'pretest_completed':
+      return {pretest: {
+      answers: data.answers,
+      score: data.score,
+      total: data.total,
+      dontKnow: data.dontKnow,
+    },
+  }
     case 'case_answered':
       return { answers: { [data.case]: { selected: data.selected, correct: data.correct, caseId: data.caseId } } }
     case 'check_answers':
       return { lastScore: data.score, checkCount: increment(1) }
-    case 'answers_revealed':
-      return { usedShowAnswers: true }
     case 'session_completed':
       return {
         completed: true,
         completedAt: serverTimestamp(),
         finalScore: data.finalScore,
         totalSeconds: data.totalSeconds,
-        usedShowAnswers: data.usedShowAnswers,
       }
     // Exam results live under `exam` so they never overwrite the Exo fields
     case 'exam_started':
@@ -91,5 +96,7 @@ export function logEvent(type, data = {}) {
 
   return Promise.all([summary, event]).catch((err) => console.error('log failed', type, err))
 }
+
+export const getCondition = () => getIdentity().condition
 
 getIdentity()
