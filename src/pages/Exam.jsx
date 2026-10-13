@@ -12,6 +12,10 @@ const DIAG = {
   upd: 'Paternal uniparental disomy',
   del: 'Maternal deletion',
   imprint: 'Imprinting error',
+  // Prader-Willi only: never offered as a choice, given in its cases
+  updMat: 'Maternal uniparental disomy',
+  delPat: 'Paternal deletion',
+  imprintPws: 'Imprinting error',
 }
 const CHOICES = ['ube3a', 'upd', 'del', 'imprint']
 
@@ -25,6 +29,10 @@ const GEL_BY_DIAG = {
   upd: [[2, 0], [0, 2]],
   imprint: [[2, 0], [0, 2]],
   del: [[1, 0], [0, 1]],
+  // Prader-Willi: every copy left is methylated, so Not I never cuts
+  updMat: [[2, 0], [2, 0]],
+  imprintPws: [[2, 0], [2, 0]],
+  delPat: [[1, 0], [1, 0]],
 }
 
 /* ---------- Families (parents' microsatellite alleles, never shared) ---------- */
@@ -34,7 +42,8 @@ const F3 = { father: { crit: [4, 4], out: [1, 5] }, mother: { crit: [1, 2], out:
 
 /* ---------- Part 1 cases ----------
    hide: which of the three pieces the student completes
-   child: the child's microsatellites (for `hide: 'ms'` it is one correct answer among others) */
+   child: the child's microsatellites (for `hide: 'ms'` it is one correct answer among others)
+   The last three cases are Prader-Willi: the student transfers the Angelman reasoning */
 const CASES = [
   {
     diag: 'normal', hide: 'gel', reverse: false, fam: F2, child: { crit: [2, 3], out: [2, 4] },
@@ -43,10 +52,6 @@ const CASES = [
   {
     diag: 'del', hide: 'diag', reverse: false, fam: F3, child: { crit: [4], out: [5, 3] },
     explain: 'Every band is thin (a single copy is left) and the methylated band is missing. Microsatellites: in the critical region only one paternal allele is visible, while outside it both parents contribute.',
-  },
-  {
-    diag: 'upd', hide: 'ms', reverse: false, fam: F1, child: { crit: [1, 2], out: [1, 3] },
-    explain: "With paternal UPD both chromosomes 15 come from the father: every allele must be paternal, inside and outside the critical region (either the father's two alleles, or one of them twice as a tall peak).",
   },
   {
     diag: 'imprint', hide: 'gel', reverse: false, fam: F3, child: { crit: [4, 1], out: [1, 4] },
@@ -61,16 +66,24 @@ const CASES = [
     explain: 'An imprinting error does not change inheritance: the child carries one allele from each parent, in both regions.',
   },
   {
-    diag: 'upd', hide: 'gel', reverse: true, fam: F3, child: { crit: [4, 4], out: [1, 5] },
-    explain: 'With the reverse probe the unmethylated fragment is 3.3 kb. Two unmethylated paternal copies give a thick 4.2 kb band with Xba I, then a single thick 3.3 kb band after Not I.',
-  },
-  {
     diag: 'imprint', hide: 'diag', reverse: true, fam: F1, child: { crit: [2, 4], out: [3, 2] },
     explain: 'No methylated band (only a thick 3.3 kb band after Not I), yet one allele from each parent: imprinting error.',
   },
   {
     diag: 'del', hide: 'ms', reverse: true, fam: F2, child: { crit: [2], out: [2, 1] },
     explain: 'In the critical region only one paternal allele is left (a single small peak). Outside the region, both parents contribute.',
+  },
+  {
+    diag: 'updMat', hide: 'ms', reverse: false, fam: F1, child: { crit: [3, 4], out: [2, 2] },
+    explain: "Mirror of paternal UPD: both chromosomes 15 come from the mother, so every allele must be maternal, inside and outside the critical region (either the mother's two alleles, or one of them twice as a tall peak).",
+  },
+  {
+    diag: 'delPat', hide: 'gel', reverse: false, fam: F2, child: { crit: [3], out: [2, 4] },
+    explain: 'Mirror of the maternal deletion: the paternal copy is missing, so only the methylated maternal copy is left. Every band is thin and Not I never cuts: a thin 4.2 kb band with Xba I alone, and the same thin 4.2 kb band after Xba I + Not I, with no 0.9 kb band.',
+  },
+  {
+    diag: 'imprintPws', hide: 'gel', reverse: true, fam: F3, child: { crit: [4, 2], out: [5, 3] },
+    explain: 'The child has one allele from each parent, but both copies carry a maternal (methylated) imprint, so Not I never cuts: a thick 4.2 kb band with Xba I alone, and the same thick 4.2 kb band after Xba I + Not I, with no 3.3 kb band.',
   },
 ]
 
@@ -88,14 +101,21 @@ const toAlleles = (counts) =>
 function regionOk(alleles, rule, F, M) {
   const [a, b] = alleles
   if (rule === 'single') return alleles.length === 1 && F.includes(a)
+  if (rule === 'singleMaternal') return alleles.length === 1 && M.includes(a)
   if (alleles.length !== 2) return false
   if (rule === 'paternal') return F.includes(a) && F.includes(b)
+  if (rule === 'maternal') return M.includes(a) && M.includes(b)
   return (F.includes(a) && M.includes(b)) || (F.includes(b) && M.includes(a))
 }
 
 function msOk(c, ms) {
-  const rule = (region) =>
-    c.diag === 'upd' ? 'paternal' : c.diag === 'del' && region === 'crit' ? 'single' : 'biparental'
+  const rule = (region) => {
+    if (c.diag === 'upd') return 'paternal'
+    if (c.diag === 'updMat') return 'maternal'
+    if (region === 'crit' && c.diag === 'del') return 'single'
+    if (region === 'crit' && c.diag === 'delPat') return 'singleMaternal'
+    return 'biparental'
+  }
   return ['crit', 'out'].every((r) =>
     regionOk(toAlleles(ms[r]), rule(r), c.fam.father[r], c.fam.mother[r])
   )
@@ -568,8 +588,9 @@ function Exam() {
         <div className="top-text">
           <h1>Exam · Angelman syndrome</h1>
           <p>
-            Two parts. First, 9 cases where one piece is missing: the Southern blot,
-            the microsatellites or the diagnosis. Then, link the observations to the
+            Two parts. First, 10 cases where one piece is missing: the Southern blot,
+            the microsatellites or the diagnosis. The last three cases are about a
+            related condition, Prader-Willi syndrome. Then, link the observations to the
             diagnoses they point to. You submit once, at the end, and then see the
             correction.
           </p>
@@ -594,7 +615,7 @@ function Exam() {
 
           <section className="exo-probe">
             <figure>
-              <figcaption>Cases 1 to 6: standard probe</figcaption>
+              <figcaption>Cases 1 to 5: standard probe</figcaption>
               <ProbeMap />
             </figure>
             <p>
@@ -603,11 +624,11 @@ function Exam() {
               sees a 0.9 kb fragment.
             </p>
           </section>
-          <div className="exo-cases">{CASES.slice(0, 6).map((c, i) => renderCase(c, i))}</div>
+          <div className="exo-cases">{CASES.slice(0, 5).map((c, i) => renderCase(c, i))}</div>
 
           <section className="exo-probe reverse-probe">
             <figure>
-              <figcaption>Cases 7 to 9: reverse probe</figcaption>
+              <figcaption>Cases 6 and 7: reverse probe</figcaption>
               <ProbeMap reverse />
             </figure>
             <p>
@@ -616,7 +637,22 @@ function Exam() {
               fragment.
             </p>
           </section>
-          <div className="exo-cases">{CASES.slice(6).map((c, i) => renderCase(c, i + 6))}</div>
+          <div className="exo-cases">{CASES.slice(5, 7).map((c, i) => renderCase(c, i + 5))}</div>
+
+          <section className="pws-intro">
+            <h3>Cases 8 to 10: Prader-Willi syndrome</h3>
+            <p>
+              Prader-Willi syndrome involves the same region of chromosome 15 as
+              Angelman syndrome, but the roles of the parents are swapped. The genes
+              involved (such as SNRPN) are active only on the paternal chromosome; on
+              the maternal chromosome they are methylated and silent. A child with no
+              working paternal copy has Prader-Willi syndrome: weak muscle tone at
+              birth, then an uncontrollable appetite. The molecular causes mirror
+              those of Angelman syndrome. Use what you learned to complete these three
+              cases. Cases 8 and 9 use the standard probe, case 10 the reverse probe.
+            </p>
+          </section>
+          <div className="exo-cases">{CASES.slice(7).map((c, i) => renderCase(c, i + 7))}</div>
 
           <h2 className="part-title">Part 2 · Build the diagnosis map</h2>
           <p className="part-intro">
