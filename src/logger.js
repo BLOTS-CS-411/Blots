@@ -34,7 +34,6 @@ function summaryFor(type, data) {
           score: data.score,               // weighted score out of `total` (100)
           total: data.total,               // 100
           correctCount: data.correctCount, // number of questions answered correctly
-          questionCount: data.questionCount,
           correctIds: data.correctIds,     // which questions were right
           dontKnow: data.dontKnow,
         },
