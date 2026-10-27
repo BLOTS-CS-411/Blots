@@ -66,7 +66,7 @@ const QUESTIONS = [
   {
     id: 'dna',
     topic: 'DNA',
-    weight: 5,
+    weight: 10,
     q: 'What is DNA primarily responsible for?',
     options: [
       'Storing genetic information',
@@ -105,7 +105,7 @@ const QUESTIONS = [
   {
     id: 'mendel-cross',
     topic: 'Mendelian inheritance',
-    weight: 15,
+    weight: 20,
     q: 'Two parents are both heterozygous (Aa) for a gene, meaning each carries one dominant allele (A) and one recessive allele (a). What is the probability that a child is aa?',
     options: ['0', '1/4', '1/2', '3/4'],
     answer: 1,
