@@ -1,15 +1,59 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { logEvent } from '../logger' // adjust to your logger file path
+import { logEvent } from '../logger'
 import './Pretest.css'
 
 const DONT_KNOW = -1
 
-/* answer = index of the correct option (used for logging only, never shown) */
+/* ---------- Small microsatellite figure (same style as the Exo page) ---------- */
+const PEAK_DATA = {
+  Father: [1, 2],
+  Mother: [3, 4],
+  Child: [1, 4],
+}
+
+function MicrosatFigure() {
+  const xOf = (a) => 70 + a * 40
+  return (
+    <svg
+      viewBox="0 0 300 170"
+      role="img"
+      aria-label="Microsatellite analysis in the critical region for a father, a mother and a child"
+      style={{ width: '100%', maxWidth: 420, display: 'block', margin: '0.5rem 0' }}
+    >
+      {Object.entries(PEAK_DATA).map(([name, alleles], i) => {
+        const base = 64 + i * 50
+        return (
+          <g key={name}>
+            <text x="2" y={base - 6} fontSize="11" fill="currentColor">{name}</text>
+            <line x1="52" y1={base} x2="292" y2={base} stroke="currentColor" strokeOpacity="0.5" />
+            {alleles.map((a) => {
+              const x = xOf(a)
+              const h = 34
+              return (
+                <path
+                  key={a}
+                  d={`M${x - 6},${base} C${x - 4},${base} ${x - 3},${base - h} ${x},${base - h} C${x + 3},${base - h} ${x + 4},${base} ${x + 6},${base}`}
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                />
+              )
+            })}
+          </g>
+        )
+      })}
+    </svg>
+  )
+}
+
+/* answer = index of the correct option (used for scoring/logging only, never shown)
+   weight = points out of 100 (all weights sum to 100) */
 const QUESTIONS = [
   {
     id: 'dna-structure',
     topic: 'DNA structure',
+    weight: 5,
     q: 'Which statement best describes the structure of DNA?',
     options: [
       'A single strand made of amino acids',
@@ -20,16 +64,10 @@ const QUESTIONS = [
     answer: 1,
   },
   {
-    id: 'base-pairing',
-    topic: 'DNA structure',
-    q: 'In DNA, which base pairs with adenine (A)?',
-    options: ['Guanine (G)', 'Cytosine (C)', 'Thymine (T)', 'Uracil (U)'],
-    answer: 2,
-  },
-  {
     id: 'dna',
     topic: 'DNA',
-    q: 'What is DNA primarily responsable for?',
+    weight: 5,
+    q: 'What is DNA primarily responsible for?',
     options: [
       'Storing genetic information',
       'Producing energy',
@@ -41,6 +79,7 @@ const QUESTIONS = [
   {
     id: 'allele',
     topic: 'Alleles',
+    weight: 10,
     q: 'What is an allele?',
     options: [
       'A type of chromosome',
@@ -53,6 +92,7 @@ const QUESTIONS = [
   {
     id: 'chromosomes',
     topic: 'Chromosomes',
+    weight: 10,
     q: 'A typical human body cell has 46 chromosomes. How are they organised?',
     options: [
       '46 different chromosomes, all inherited from the mother',
@@ -65,11 +105,54 @@ const QUESTIONS = [
   {
     id: 'mendel-cross',
     topic: 'Mendelian inheritance',
-    q: 'Two parents are both heterozygous (Aa) for a gene. What is the probability that a child is aa?',
+    weight: 15,
+    q: 'Two parents are both heterozygous (Aa) for a gene, meaning each carries one dominant allele (A) and one recessive allele (a). What is the probability that a child is aa?',
     options: ['0', '1/4', '1/2', '3/4'],
     answer: 1,
   },
+  {
+    id: 'angelman',
+    topic: 'Angelman syndrome',
+    weight: 15,
+    q: 'What is Angelman syndrome?',
+    options: [
+      'a syndrome where you have abdominal pain, bloating, diarrhea or constipations.',
+      'a syndrome where you have weight gain around the abdomen and face, muscle weakness and high blood pressure.',
+      'a syndrome where you have severe developmental delay and absence or very limited speech.',
+      'a syndrome where you have unusually flexible joints, stretchy or fragile skin and joint pain.',
+    ],
+    answer: 2,
+  },
+  {
+    id: 'prader-willi',
+    topic: 'Prader-Willi syndrome',
+    weight: 15,
+    q: 'What is Prader-willi syndrome?',
+    options: [
+      'a syndrome where you are constantly hungry.',
+      'a syndrome where you have an uncomfortable urge to move your legs.',
+      'a syndrome where you have a characteristic facial features, short stature and heart defects.',
+      'a syndrome in which a person believes they are dead, do not exist, or have lost their organs or blood.',
+    ],
+    answer: 0,
+  },
+  {
+    id: 'microsat-graph',
+    topic: 'Reading a microsatellite graph',
+    weight: 15,
+    q: 'In the graph below, each peak is one allele. Looking at the child, where do the two alleles come from?',
+    figure: <MicrosatFigure />,
+    options: [
+      'Both alleles come from the father',
+      'Both alleles come from the mother',
+      'One allele comes from the father and one from the mother',
+      'Neither allele matches a parent',
+    ],
+    answer: 2,
+  },
 ]
+
+const MAX_SCORE = QUESTIONS.reduce((sum, q) => sum + q.weight, 0) // 100
 
 function Pretest() {
   const navigate = useNavigate()
@@ -81,11 +164,14 @@ function Pretest() {
   const choose = (id, value) => setAnswers((a) => ({ ...a, [id]: value }))
 
   const next = () => {
-    const score = QUESTIONS.filter((q) => answers[q.id] === q.answer).length
+    const correct = QUESTIONS.filter((q) => answers[q.id] === q.answer)
+    const score = correct.reduce((sum, q) => sum + q.weight, 0) // out of 100
     logEvent('pretest_completed', {
       answers,
-      score,
-      total: QUESTIONS.length,
+      score,                       // weighted score out of 100
+      total: MAX_SCORE,            // 100
+      correctCount: correct.length,
+      correctIds: correct.map((q) => q.id),
       dontKnow: QUESTIONS.filter((q) => answers[q.id] === DONT_KNOW).length,
     })
     navigate('/learn')
@@ -97,7 +183,7 @@ function Pretest() {
         <div className="top-text">
           <h1>What do you already know?</h1>
           <p>
-            Six questions on basic genetics.
+            {QUESTIONS.length} questions on genetics.
           </p>
 
           <div
@@ -123,6 +209,8 @@ function Pretest() {
                     <span className="pretest-topic">{q.topic}</span>
                     <span className="pretest-text">{qi + 1}. {q.q}</span>
                   </legend>
+
+                  {q.figure}
 
                   {q.options.map((opt, oi) => (
                     <label
