@@ -26,15 +26,19 @@ function nextSeq() {
 function summaryFor(type, data) {
   switch (type) {
     case 'session_started':
-      return { startedAt: serverTimestamp(), completed: false, checkCount: 0}
+      return { startedAt: serverTimestamp(), completed: false, checkCount: 0 }
     case 'pretest_completed':
-      return {pretest: {
-      answers: data.answers,
-      score: data.score,
-      total: data.total,
-      dontKnow: data.dontKnow,
-    },
-  }
+      return {
+        pretest: {
+          answers: data.answers,
+          score: data.score,               // weighted score out of `total` (100)
+          total: data.total,               // 100
+          correctCount: data.correctCount, // number of questions answered correctly
+          questionCount: data.questionCount,
+          correctIds: data.correctIds,     // which questions were right
+          dontKnow: data.dontKnow,
+        },
+      }
     case 'case_answered':
       return { answers: { [data.case]: { selected: data.selected, correct: data.correct, caseId: data.caseId } } }
     case 'check_answers':
