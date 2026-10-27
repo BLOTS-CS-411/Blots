@@ -211,8 +211,8 @@ function Exo() {
   const [picks, setPicks] = useState({})
   const [checked, setChecked] = useState(false)
 
-  // AI popup (placeholder: always answers "not implemented")
-  const [chat, setChat] = useState({ open: false, messages: [] })
+  // AI popup: chat = { open, pending, asked: { letter, caseId }, messages: [{ from, text }] }
+  const [chat, setChat] = useState({ open: false, pending: false, messages: [] })
   const [draft, setDraft] = useState('')
   const chatEnd = useRef(null)
 
@@ -251,8 +251,11 @@ function Exo() {
     const pool = wrong.length ? wrong : order
     const askedId = pool[Math.floor(Math.random() * pool.length)]
     const letter = LETTERS[order.indexOf(askedId)] // letter as shown to the participant
+
     setChat((c) => ({
       open: true,
+      pending: false,
+      asked: { letter, caseId: askedId },
       messages: [
         ...c.messages,
         { from: 'ai', text: `Could you please explain your reasoning for case ${letter}?` },
@@ -265,20 +268,44 @@ function Exo() {
     })
   }
 
-  const sendChat = (e) => {
+  const sendChat = async (e) => {
     e.preventDefault()
     const text = draft.trim()
-    if (!text) return
+    if (!text || chat.pending) return
+
+    const history = [...chat.messages, { from: 'user', text }]
+    setChat((c) => ({ ...c, messages: history, pending: true }))
+    setDraft('')
+    logEvent('chatbot_message', { length: text.length })
+
+    const asked = chat.asked
+    const selectedKey = asked ? picks[asked.caseId] : null
+    let reply = 'Sorry, something went wrong. Please try again.'
+    try {
+      const r = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          messages: history.map((m) => ({
+            role: m.from === 'ai' ? 'assistant' : 'user',
+            content: m.text,
+          })),
+          context: {
+            case: asked?.letter,
+            selected: INTERPRETATIONS.find((i) => i.key === selectedKey)?.label,
+          },
+        }),
+      })
+      const data = await r.json()
+      reply = data.reply || data.error || reply
+    } catch (err) {
+      console.error(err)
+    }
     setChat((c) => ({
       ...c,
-      messages: [
-        ...c.messages,
-        { from: 'user', text },
-        { from: 'ai', text: 'Chatbot is not implemented yet' },
-      ],
+      pending: false,
+      messages: [...c.messages, { from: 'ai', text: reply }],
     }))
-    logEvent('chatbot_message', { length: text.length })
-    setDraft('')
   }
 
   const handleNext = () => {
@@ -398,10 +425,15 @@ function Exo() {
             <p className="exo-score" role="status">
               {checked ? `${score} / ${CASES.length} correct` : '\u00A0'}
             </p>
-                
-          <button className="cta exo-next" type="button" disabled={!allPicked} onClick={handleNext}>
-            Next
-          </button>
+
+            <button
+              className="cta exo-next"
+              type="button"
+              disabled={!allPicked}
+              onClick={handleNext}
+            >
+              Next
+            </button>
           </div>
         </div>
       </section>
@@ -423,6 +455,7 @@ function Exo() {
             {chat.messages.map((m, i) => (
               <p key={i} className={`exo-msg ${m.from}`}>{m.text}</p>
             ))}
+            {chat.pending && <p className="exo-msg ai">…</p>}
             <div ref={chatEnd} />
           </div>
           <form className="exo-chat-form" onSubmit={sendChat}>
@@ -433,7 +466,7 @@ function Exo() {
               placeholder="Type your explanation…"
               aria-label="Your explanation"
             />
-            <button type="submit" className="exo-btn">Send</button>
+            <button type="submit" className="exo-btn" disabled={chat.pending}>Send</button>
           </form>
         </aside>
       )}
