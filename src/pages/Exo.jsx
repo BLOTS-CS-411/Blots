@@ -280,6 +280,8 @@ function Exo() {
 
     const asked = chat.asked
     const selectedKey = asked ? picks[asked.caseId] : null
+    const correctKey = asked ? CASES[asked.caseId].answer : null
+    const labelOf = (key) => INTERPRETATIONS.find((i) => i.key === key)?.label
     let reply = 'Sorry, something went wrong. Please try again.'
     try {
       const r = await fetch('/api/chat', {
@@ -292,12 +294,23 @@ function Exo() {
           })),
           context: {
             case: asked?.letter,
-            selected: INTERPRETATIONS.find((i) => i.key === selectedKey)?.label,
+            selected: labelOf(selectedKey),
+            correct: labelOf(correctKey),
           },
         }),
       })
       const data = await r.json()
       reply = data.reply || data.error || reply
+      if (data.reply) {
+        logEvent('chatbot_reply', {
+          case: asked?.letter ?? null,
+          caseId: asked?.caseId ?? null,
+          turn: history.filter((m) => m.from === 'user').length,
+          hintScore: data.hint?.score ?? null,
+          hintReason: data.hint?.reason ?? null,
+          reply: data.reply,
+        })
+      }
     } catch (err) {
       console.error(err)
     }
