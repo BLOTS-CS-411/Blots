@@ -70,6 +70,10 @@ function summaryFor(type, data) {
       }
     case 'exam_finished':
       return { exam: { finishedAt: serverTimestamp(), reviewSeconds: data.reviewSeconds } }
+    case 'chatbot_reply':
+      return data.hintScore == null
+        ? {}
+        : { hint: { count: increment(1), sum: increment(data.hintScore) } }
     default:
       return {}
   }
