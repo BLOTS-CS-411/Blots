@@ -57,6 +57,9 @@ function summaryFor(type, data) {
         exam: {
           completed: true,
           submittedAt: serverTimestamp(),
+          quizScore: data.quizScore,
+          quizTotal: data.quizTotal,
+          quizAnswers: data.quizAnswers,
           part1Score: data.part1Score,
           part1Total: data.part1Total,
           graphScore: data.graphScore,
