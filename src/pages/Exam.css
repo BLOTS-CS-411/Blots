@@ -108,6 +108,10 @@
 .exam .diag-choices label.checked { border-color: var(--accent); background: #f5f3fd; }
 .exam .diag-choices:disabled label { cursor: default; }
 
+/* theory questions: long options, one per row */
+.exam .quiz-q .diag-choices { grid-template-columns: 1fr; margin-top: 6px; }
+.exam .quiz-q .diag-choices legend { font-size: 1rem; margin-bottom: 8px; }
+
 .exam .correction { margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--line); }
 .exam .correction .expected { max-width: 420px; margin: 8px 0; }
 

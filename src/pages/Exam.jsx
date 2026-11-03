@@ -5,6 +5,78 @@ import { Gel, Microsat, ProbeMap } from '../components/Figures'
 import './Exo.css'
 import './Exam.css'
 
+/* ---------- Part 1: theory questions, 1 point each ----------
+   Answers come from the lesson and are not asked in the pre-test
+   answer = index of the correct option */
+const QUIZ = [
+  {
+    id: 'most-frequent',
+    q: 'Which mechanism is the most frequent cause of Angelman syndrome?',
+    options: [
+      'Point mutation of UBE3A',
+      'Paternal uniparental disomy',
+      'Maternal deletion',
+      'Imprinting error',
+    ],
+    answer: 2,
+  },
+  {
+    id: 'imprinting-error',
+    q: 'What happens in an imprinting error?',
+    options: [
+      'The child has one chromosome 15 from each parent, but the maternal copy carries the paternal imprint and is silenced',
+      'The maternal copy of UBE3A has a mutation in its sequence',
+      'A segment of the paternal chromosome 15 is missing',
+      'The paternal copy becomes active in neurons',
+    ],
+    answer: 0,
+  },
+  {
+    id: 'microsatellite',
+    q: 'What is a microsatellite?',
+    options: [
+      'A small extra chromosome found in some neurons',
+      'A long gene that codes for a protein',
+      'A methylated site on the maternal chromosome',
+      'A short sequence of 2 to 5 bases repeated several times in a row',
+    ],
+    answer: 3,
+  },
+  {
+    id: 'microsatellite-method',
+    q: 'How is a microsatellite marker measured?',
+    options: [
+      'The DNA is cut with Not I, then stained on a membrane',
+      'The region is copied by PCR with a fluorescent primer, then the fragments are separated by size',
+      'The protein made from the marker is measured in the blood',
+      'The chromosomes are counted under a microscope',
+    ],
+    answer: 1,
+  },
+  {
+    id: 'southern-steps',
+    q: 'What is the correct order of the Southern blot steps?',
+    options: [
+      'DNA cutting → separation on a gel → transfer to a membrane → probe binding',
+      'Probe binding → DNA cutting → transfer to a membrane → separation on a gel',
+      'Separation on a gel → DNA cutting → probe binding → transfer to a membrane',
+      'PCR → DNA cutting → separation on a gel → probe binding',
+    ],
+    answer: 0,
+  },
+  {
+    id: 'southern-vs-microsat',
+    q: 'What does the Southern blot show that microsatellites cannot?',
+    options: [
+      'The size of the repeats',
+      'Which parent each allele came from',
+      'The sequence of UBE3A',
+      'DNA methylation',
+    ],
+    answer: 3,
+  },
+]
+
 /* ---------- Diagnoses ---------- */
 const DIAG = {
   normal: 'No disease (healthy sibling)',
@@ -40,7 +112,7 @@ const F1 = { father: { crit: [1, 2], out: [1, 3] }, mother: { crit: [3, 4], out:
 const F2 = { father: { crit: [2, 5], out: [2, 2] }, mother: { crit: [1, 3], out: [1, 4] } }
 const F3 = { father: { crit: [4, 4], out: [1, 5] }, mother: { crit: [1, 2], out: [3, 4] } }
 
-/* ---------- Part 1 cases ----------
+/* ---------- Part 2 cases ----------
    hide: which of the three pieces the student completes
    child: the child's microsatellites (for `hide: 'ms'` it is one correct answer among others)
    The last three cases are Prader-Willi: the student transfers the Angelman reasoning */
@@ -145,7 +217,7 @@ function answerString(c, a) {
 const emptyAnswers = () =>
   CASES.map(() => ({ diag: '', gel: [[0, 0], [0, 0]], ms: { crit: {}, out: {} } }))
 
-/* ---------- Part 2: relation graph ---------- */
+/* ---------- Part 3: relation graph ---------- */
 const OBS_SB = [
   { id: 'sb-normal', short: 'SB: normal pattern', text: 'Methylated and unmethylated bands both present after Xba I + Not I (normal pattern)' },
   { id: 'sb-unmeth2', short: 'SB: no methylation, thick band', text: 'No methylated band: the unmethylated band is thick (two unmethylated copies)' },
@@ -283,7 +355,7 @@ function LinkGraph({ links, onToggle, locked, sbOrder, msOrder }) {
   )
 }
 
-/* ---------- Part 1 widgets ---------- */
+/* ---------- Part 2 widgets ---------- */
 function TokenIcon({ kind, v }) {
   if (kind === 'gel') {
     return (
@@ -352,19 +424,22 @@ function Exam() {
 
   const sbOrder = useMemo(() => shuffle(OBS_SB), [])
   const msOrder = useMemo(() => shuffle(OBS_MS), [])
+  const [quiz, setQuiz] = useState({}) // { questionId: optionIndex }
   const [answers, setAnswers] = useState(emptyAnswers)
   const [links, setLinks] = useState([])
   const [sel, setSel] = useState(null) // token picked by click: { caseIdx, kind, v }
   const [ghost, setGhost] = useState(null) // token being dragged, with pointer position
   const [submitted, setSubmitted] = useState(false)
 
+  const quizDone = Object.keys(quiz).length
+  const quizScore = QUIZ.filter((q) => quiz[q.id] === q.answer).length
   const results = CASES.map((c, i) => grade(c, answers[i]))
   const part1Score = results.filter(Boolean).length
   const done = CASES.filter((c, i) => isComplete(c, answers[i])).length
   const graphCorrect = links.filter((k) => CORRECT_LINKS.has(k)).length
   const graphWrong = links.length - graphCorrect
   const graphScore = Math.max(0, graphCorrect - graphWrong)
-  const ready = done === CASES.length && links.length > 0
+  const ready = quizDone === QUIZ.length && done === CASES.length && links.length > 0
 
   const update = (i, fn) =>
     setAnswers((prev) => prev.map((a, j) => (j === i ? fn(a) : a)))
@@ -435,6 +510,7 @@ function Exam() {
     setLinks((prev) => (prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]))
 
   const reset = () => {
+    setQuiz({})
     setAnswers(emptyAnswers())
     setLinks([])
     setSel(null)
@@ -445,6 +521,12 @@ function Exam() {
     setSel(null)
     submitTime.current = Date.now()
     logEvent('exam_submitted', {
+      quizScore,
+      quizTotal: QUIZ.length,
+      quizAnswers: Object.fromEntries(
+        QUIZ.map((q) => [q.id, { given: quiz[q.id], correct: quiz[q.id] === q.answer }])
+      ),
+      // part1* and graph* keep their names (cases and map) so earlier sessions stay comparable
       part1Score,
       part1Total: CASES.length,
       graphScore,
@@ -467,6 +549,42 @@ function Exam() {
       reviewSeconds: Math.round((Date.now() - submitTime.current) / 1000),
     })
     navigate('/end')
+  }
+
+  const renderQuestion = (q, i) => {
+    const ok = quiz[q.id] === q.answer
+    return (
+      <article key={q.id} className={`exo-case quiz-q ${submitted ? (ok ? 'ok' : 'ko') : ''}`}>
+        <header className="case-head">
+          <h3>Question {i + 1}</h3>
+          <span className="tag">1 point</span>
+        </header>
+
+        <fieldset className="diag-choices" disabled={submitted}>
+          <legend>{q.q}</legend>
+          {q.options.map((opt, oi) => (
+            <label key={oi} className={quiz[q.id] === oi ? 'checked' : ''}>
+              <input
+                type="radio"
+                name={`quiz-${q.id}`}
+                checked={quiz[q.id] === oi}
+                onChange={() => setQuiz((prev) => ({ ...prev, [q.id]: oi }))}
+              />
+              {opt}
+            </label>
+          ))}
+        </fieldset>
+
+        {submitted && (
+          <div className="correction">
+            <p className="exo-verdict" role="status">{ok ? 'Correct.' : 'Not quite.'}</p>
+            <p className="exo-explain">
+              <strong>Answer:</strong> {q.options[q.answer]}.
+            </p>
+          </div>
+        )}
+      </article>
+    )
   }
 
   const renderCase = (c, i) => {
@@ -588,9 +706,10 @@ function Exam() {
         <div className="top-text">
           <h1>Exam · Angelman syndrome</h1>
           <p>
-            Two parts. First, 10 cases where one piece is missing: the Southern blot,
-            the microsatellites or the diagnosis. The last three cases are about a
-            related condition, Prader-Willi syndrome. Then, link the observations to the
+            Three parts. First, {QUIZ.length} multiple-choice questions on the lesson.
+            Then, 10 cases where one piece is missing: the Southern blot, the
+            microsatellites or the diagnosis. The last three cases are about a related
+            condition, Prader-Willi syndrome. Finally, link the observations to the
             diagnoses they point to. You submit once, at the end, and then see the
             correction.
           </p>
@@ -598,6 +717,7 @@ function Exam() {
           <details className="exo-help">
             <summary>How to answer</summary>
             <ul>
+              <li>Multiple-choice questions: choose one answer. Each question is worth 1 point.</li>
               <li>
                 Southern blot and microsatellites: drag a piece (thin or thick band,
                 small or tall peak) onto the child&apos;s dashed slots. You can also
@@ -611,7 +731,10 @@ function Exam() {
             </ul>
           </details>
 
-          <h2 className="part-title">Part 1 · Complete the missing piece</h2>
+          <h2 className="part-title">Part 1 · Questions on the lesson</h2>
+          <div className="exo-cases">{QUIZ.map((q, i) => renderQuestion(q, i))}</div>
+
+          <h2 className="part-title">Part 2 · Complete the missing piece</h2>
 
           <section className="exo-probe">
             <figure>
@@ -654,7 +777,7 @@ function Exam() {
           </section>
           <div className="exo-cases">{CASES.slice(7).map((c, i) => renderCase(c, i + 7))}</div>
 
-          <h2 className="part-title">Part 2 · Build the diagnosis map</h2>
+          <h2 className="part-title">Part 3 · Build the diagnosis map</h2>
           <p className="part-intro">
             Each diagnosis is identified by one Southern blot observation and one
             microsatellite observation. Click an observation, then a diagnosis, to
@@ -685,14 +808,15 @@ function Exam() {
                 Start over
               </button>
               <span className="progress">
-                {done} / {CASES.length} cases completed · {links.length} link{links.length === 1 ? '' : 's'}
+                {quizDone} / {QUIZ.length} questions answered · {done} / {CASES.length} cases completed ·{' '}
+                {links.length} link{links.length === 1 ? '' : 's'}
               </span>
             </div>
           ) : (
             <>
               <p className="exo-score" role="status">
-                Part 1: {part1Score} / {CASES.length} correct · Part 2: {graphCorrect} /{' '}
-                {CORRECT_LINKS.size} links found, {graphWrong} wrong
+                Part 1: {quizScore} / {QUIZ.length} points · Part 2: {part1Score} / {CASES.length}{' '}
+                correct · Part 3: {graphCorrect} / {CORRECT_LINKS.size} links found, {graphWrong} wrong
               </p>
               <button className="cta" type="button" onClick={handleFinish}>
                 Finish
