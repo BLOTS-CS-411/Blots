@@ -7,7 +7,8 @@ import { getIdentity } from './logger'
    sections:  active time per part of a long page, from the [data-section] elements
    questions: moves (answer given or changed) and erasures (answer removed) per question
    events:    every interaction in order. t = seconds since the start of the session
-   Text typed by the student is never stored, only its length */
+   feedback:  the open question before the End page, the only typed text kept in the file
+   Other typed text is never stored, only its length */
 
 const KEY = 'tracker'
 const SCHEMA_VERSION = 2
@@ -25,6 +26,7 @@ const newState = (sessionId) => ({
   sections: {},
   questions: {},
   resets: {},
+  feedback: null,
   scores: { pretest: null, exo: null, exam: null },
   events: [],
 })
@@ -146,6 +148,11 @@ export function recordCheck(part, data) {
   recordScore(part, { checks: [...checks, { t: round((Date.now() - getIdentity().start) / 1000), ...data }] })
 }
 
+export function recordFeedback(question, answer) {
+  state.feedback = { question, answer }
+  addEvent('feedback', 'submit', { length: answer.length })
+}
+
 /* ---------- Automatic capture of clicks ---------- */
 function describe(target) {
   const el = target.closest(
@@ -254,6 +261,7 @@ export function buildSessionFile() {
     sections: roundMap(state.sections, round),
     questions: state.questions,
     resets: state.resets,
+    feedback: state.feedback ?? null,
     events: state.events,
   }
 }

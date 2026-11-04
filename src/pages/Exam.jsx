@@ -607,7 +607,7 @@ function Exam() {
     logEvent('exam_finished', {
       reviewSeconds: Math.round((Date.now() - submitTime.current) / 1000),
     })
-    navigate('/end')
+    navigate('/feedback')
   }
 
   const renderQuestion = (q, i) => {
