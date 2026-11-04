@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { logEvent } from '../logger'
+import { countMove, recordScore } from '../tracker'
 import './Pretest.css'
 
 const DONT_KNOW = -1
@@ -161,7 +162,10 @@ function Pretest() {
   const answered = Object.keys(answers).length
   const allDone = answered === QUESTIONS.length
 
-  const choose = (id, value) => setAnswers((a) => ({ ...a, [id]: value }))
+  const choose = (id, value) => {
+    countMove(`pretest.${id}`)
+    setAnswers((a) => ({ ...a, [id]: value }))
+  }
 
   const next = () => {
     const correct = QUESTIONS.filter((q) => answers[q.id] === q.answer)
@@ -173,6 +177,18 @@ function Pretest() {
       correctCount: correct.length,
       correctIds: correct.map((q) => q.id),
       dontKnow: QUESTIONS.filter((q) => answers[q.id] === DONT_KNOW).length,
+    })
+    recordScore('pretest', {
+      score,
+      total: MAX_SCORE,
+      correctCount: correct.length,
+      dontKnow: QUESTIONS.filter((q) => answers[q.id] === DONT_KNOW).length,
+      questions: Object.fromEntries(
+        QUESTIONS.map((q) => [
+          q.id,
+          { given: answers[q.id], correct: answers[q.id] === q.answer, weight: q.weight },
+        ])
+      ),
     })
     navigate('/learn')
   }

@@ -209,7 +209,7 @@ function Learn() {
           </nav>
 
           {/* ---- The disease ---- */}
-          <section id="disease" className="learn-sec">
+          <section id="disease" data-section="disease" className="learn-sec">
             <h2>The disease</h2>
             <p>
               Angelman syndrome affects about 1 child in 15,000. Babies look
@@ -240,7 +240,7 @@ function Learn() {
           </section>
 
           {/* ---- Four mechanisms ---- */}
-          <section id="mechanisms" className="learn-sec">
+          <section id="mechanisms" data-section="mechanisms" className="learn-sec">
             <h2>Four genetic mechanisms</h2>
             <p>
               Four events can leave a child without a working maternal copy of
@@ -266,7 +266,7 @@ function Learn() {
           </section>
 
           {/* ---- Microsatellites ---- */}
-          <section id="microsatellites" className="learn-sec">
+          <section id="microsatellites" data-section="microsatellites" className="learn-sec">
             <h2>Microsatellite analysis</h2>
             <h3>What is a microsatellite?</h3>
             <p>
@@ -332,7 +332,7 @@ function Learn() {
           </section>
 
           {/* ---- Southern blot ---- */}
-          <section id="southern" className="learn-sec">
+          <section id="southern" data-section="southern" className="learn-sec">
             <h2>Southern blot</h2>
             <h3>The idea</h3>
             <p>

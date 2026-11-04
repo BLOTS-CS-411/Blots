@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { logEvent } from '../logger'
+import { countErasure, countMove, countReset, enterPhase, recordScore } from '../tracker'
 import { useNavigate } from 'react-router-dom'
 import { Gel, Microsat, ProbeMap } from '../components/Figures'
 import './Exo.css'
 import './Exam.css'
 
-/* ---------- Part 1: theory questions, 1 point each ----------
+/* ---------- Part 1: theory questions ----------
    Answers come from the lesson and are not asked in the pre-test
    answer = index of the correct option */
 const QUIZ = [
@@ -234,6 +235,17 @@ const CORRECT_LINKS = new Set([
   'ms-bi>ube3a', 'ms-bi>imprint', 'ms-pat>upd', 'ms-single>del',
 ])
 
+/* ---------- Marking ----------
+   Copied into the session file, so each file says how it was scored */
+const POINTS = 4 // each answer is worth this many points, so the exam is out of 100
+const GRAPH_TOTAL = CORRECT_LINKS.size + 1 // one more for a perfect map
+const EXAM_TOTAL = (QUIZ.length + CASES.length + GRAPH_TOTAL) * POINTS
+const MARKING = {
+  part1: `${QUIZ.length * POINTS} points: ${POINTS} per correct question`,
+  part2: `${CASES.length * POINTS} points: ${POINTS} per case, all or nothing`,
+  part3: `${GRAPH_TOTAL * POINTS} points: ${POINTS} per correct link, plus ${POINTS} if all ${CORRECT_LINKS.size} links are correct with no wrong link`,
+}
+
 function linkPath(o, d) {
   const ox = o.x + o.w / 2, oy = o.y + o.h / 2
   const dx = d.x + d.w / 2, dy = d.y + d.h / 2
@@ -438,14 +450,20 @@ function Exam() {
   const done = CASES.filter((c, i) => isComplete(c, answers[i])).length
   const graphCorrect = links.filter((k) => CORRECT_LINKS.has(k)).length
   const graphWrong = links.length - graphCorrect
-  const graphScore = Math.max(0, graphCorrect - graphWrong)
+  const graphPerfect = graphCorrect === CORRECT_LINKS.size && graphWrong === 0
+  const graphScore = graphCorrect + (graphPerfect ? 1 : 0)
+  const examScore = (quizScore + part1Score + graphScore) * POINTS
   const ready = quizDone === QUIZ.length && done === CASES.length && links.length > 0
 
   const update = (i, fn) =>
     setAnswers((prev) => prev.map((a, j) => (j === i ? fn(a) : a)))
 
   // v = 0 clears the slot
-  const place = (i, kind, key, v) =>
+  const place = (i, kind, key, v) => {
+    // Counted here, not in the state updater, which StrictMode runs twice
+    const before = current(i, kind, key)
+    if (v && v !== before) countMove(`exam.case${i + 1}`)
+    if (!v && before) countErasure(`exam.case${i + 1}`)
     update(i, (a) => {
       if (kind === 'gel') {
         const [j, k] = key.split(':').map(Number)
@@ -459,6 +477,7 @@ function Exam() {
       else delete region[p]
       return { ...a, ms: { ...a.ms, [r]: region } }
     })
+  }
 
   const current = (i, kind, key) => {
     const [x, y] = key.split(':')
@@ -506,10 +525,14 @@ function Exam() {
     if (!justDragged.current) setSel(t)
   }
 
-  const toggleLink = (key) =>
+  const toggleLink = (key) => {
+    if (links.includes(key)) countErasure('exam.map')
+    else countMove('exam.map')
     setLinks((prev) => (prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]))
+  }
 
   const reset = () => {
+    countReset('exam')
     setQuiz({})
     setAnswers(emptyAnswers())
     setLinks([])
@@ -521,18 +544,21 @@ function Exam() {
     setSel(null)
     submitTime.current = Date.now()
     logEvent('exam_submitted', {
+      examScore,
+      examTotal: EXAM_TOTAL,
       quizScore,
       quizTotal: QUIZ.length,
       quizAnswers: Object.fromEntries(
         QUIZ.map((q) => [q.id, { given: quiz[q.id], correct: quiz[q.id] === q.answer }])
       ),
-      // part1* and graph* keep their names (cases and map) so earlier sessions stay comparable
+      // part1* and graph* keep their names (cases and map) so earlier sessions stay comparable.
+      // They are counts of correct answers: only examScore is multiplied by POINTS
       part1Score,
       part1Total: CASES.length,
       graphScore,
       graphCorrect,
       graphWrong,
-      graphTotal: CORRECT_LINKS.size,
+      graphTotal: GRAPH_TOTAL,
       links,
       totalSeconds: Math.round((submitTime.current - startTime.current) / 1000),
       answers: Object.fromEntries(
@@ -542,13 +568,46 @@ function Exam() {
         ])
       ),
     })
+    enterPhase('exam_correction') // so the exam time stops when the answers are submitted
+    recordScore('exam', {
+      score: examScore,
+      total: EXAM_TOTAL,
+      marking: MARKING,
+      part1: {
+        score: quizScore * POINTS,
+        total: QUIZ.length * POINTS,
+        correct: quizScore,
+        questions: Object.fromEntries(
+          QUIZ.map((q) => [q.id, { given: quiz[q.id], correct: quiz[q.id] === q.answer }])
+        ),
+      },
+      part2: {
+        score: part1Score * POINTS,
+        total: CASES.length * POINTS,
+        correct: part1Score,
+        cases: Object.fromEntries(
+          CASES.map((c, i) => [
+            `case${i + 1}`,
+            { hide: c.hide, diag: c.diag, given: answerString(c, answers[i]), correct: results[i] },
+          ])
+        ),
+      },
+      part3: {
+        score: graphScore * POINTS,
+        correct: graphCorrect,
+        wrong: graphWrong,
+        total: GRAPH_TOTAL * POINTS,
+        perfectMap: graphPerfect,
+        links,
+      },
+    })
   }
 
   const handleFinish = () => {
     logEvent('exam_finished', {
       reviewSeconds: Math.round((Date.now() - submitTime.current) / 1000),
     })
-    navigate('/end')
+    navigate('/feedback')
   }
 
   const renderQuestion = (q, i) => {
@@ -557,7 +616,7 @@ function Exam() {
       <article key={q.id} className={`exo-case quiz-q ${submitted ? (ok ? 'ok' : 'ko') : ''}`}>
         <header className="case-head">
           <h3>Question {i + 1}</h3>
-          <span className="tag">1 point</span>
+          <span className="tag">{POINTS} points</span>
         </header>
 
         <fieldset className="diag-choices" disabled={submitted}>
@@ -568,7 +627,10 @@ function Exam() {
                 type="radio"
                 name={`quiz-${q.id}`}
                 checked={quiz[q.id] === oi}
-                onChange={() => setQuiz((prev) => ({ ...prev, [q.id]: oi }))}
+                onChange={() => {
+                  countMove(`exam.quiz.${q.id}`)
+                  setQuiz((prev) => ({ ...prev, [q.id]: oi }))
+                }}
               />
               {opt}
             </label>
@@ -668,7 +730,10 @@ function Exam() {
                   name={`diag-${i}`}
                   value={k}
                   checked={a.diag === k}
-                  onChange={() => update(i, (prev) => ({ ...prev, diag: k }))}
+                  onChange={() => {
+                    countMove(`exam.case${i + 1}`)
+                    update(i, (prev) => ({ ...prev, diag: k }))
+                  }}
                 />
                 {DIAG[k]}
               </label>
@@ -717,7 +782,7 @@ function Exam() {
           <details className="exo-help">
             <summary>How to answer</summary>
             <ul>
-              <li>Multiple-choice questions: choose one answer. Each question is worth 1 point.</li>
+              <li>Multiple-choice questions: choose one answer. Each question is worth {POINTS} points.</li>
               <li>
                 Southern blot and microsatellites: drag a piece (thin or thick band,
                 small or tall peak) onto the child&apos;s dashed slots. You can also
@@ -731,73 +796,80 @@ function Exam() {
             </ul>
           </details>
 
-          <h2 className="part-title">Part 1 · Questions on the lesson</h2>
-          <div className="exo-cases">{QUIZ.map((q, i) => renderQuestion(q, i))}</div>
+          <div data-section="part1">
+            <h2 className="part-title">Part 1 · Questions on the lesson</h2>
+            <div className="exo-cases">{QUIZ.map((q, i) => renderQuestion(q, i))}</div>
+          </div>
 
-          <h2 className="part-title">Part 2 · Complete the missing piece</h2>
+          <div data-section="part2">
+            <h2 className="part-title">Part 2 · Complete the missing piece</h2>
 
-          <section className="exo-probe">
-            <figure>
-              <figcaption>Cases 1 to 5: standard probe</figcaption>
-              <ProbeMap />
-            </figure>
-            <p>
-              The probe binds between the first Xba I site and the Not I site. Xba I
-              alone gives 4.2 kb. When Not I can cut (unmethylated site), the probe
-              sees a 0.9 kb fragment.
+            <section className="exo-probe">
+              <figure>
+                <figcaption>Cases 1 to 5: standard probe</figcaption>
+                <ProbeMap />
+              </figure>
+              <p>
+                The probe binds between the first Xba I site and the Not I site. Xba I
+                alone gives 4.2 kb. When Not I can cut (unmethylated site), the probe
+                sees a 0.9 kb fragment.
+              </p>
+            </section>
+            <div className="exo-cases">{CASES.slice(0, 5).map((c, i) => renderCase(c, i))}</div>
+
+            <section className="exo-probe reverse-probe">
+              <figure>
+                <figcaption>Cases 6 and 7: reverse probe</figcaption>
+                <ProbeMap reverse />
+              </figure>
+              <p>
+                The probe now binds on the other side of the Not I site. Xba I alone
+                still gives 4.2 kb, but when Not I cuts, the probe sees a 3.3 kb
+                fragment.
+              </p>
+            </section>
+            <div className="exo-cases">{CASES.slice(5, 7).map((c, i) => renderCase(c, i + 5))}</div>
+
+            <section className="pws-intro">
+              <h3>Cases 8 to 10: Prader-Willi syndrome</h3>
+              <p>
+                Prader-Willi syndrome involves the same region of chromosome 15 as
+                Angelman syndrome, but the roles of the parents are swapped. The genes
+                involved (such as SNRPN) are active only on the paternal chromosome; on
+                the maternal chromosome they are methylated and silent. A child with no
+                working paternal copy has Prader-Willi syndrome: weak muscle tone at
+                birth, then an uncontrollable appetite. The molecular causes mirror
+                those of Angelman syndrome. Use what you learned to complete these three
+                cases. Cases 8 and 9 use the standard probe, case 10 the reverse probe.
+              </p>
+            </section>
+            <div className="exo-cases">{CASES.slice(7).map((c, i) => renderCase(c, i + 7))}</div>
+          </div>
+
+          <div data-section="part3">
+            <h2 className="part-title">Part 3 · Build the diagnosis map</h2>
+            <p className="part-intro">
+              Each diagnosis is identified by one Southern blot observation and one
+              microsatellite observation. Click an observation, then a diagnosis, to
+              link them (or the other way round). Click the same pair again to remove
+              the link. An observation can lead to several diagnoses. Each correct link
+              earns {POINTS} points, and a complete map with no wrong link earns {POINTS} more.
             </p>
-          </section>
-          <div className="exo-cases">{CASES.slice(0, 5).map((c, i) => renderCase(c, i))}</div>
-
-          <section className="exo-probe reverse-probe">
-            <figure>
-              <figcaption>Cases 6 and 7: reverse probe</figcaption>
-              <ProbeMap reverse />
-            </figure>
-            <p>
-              The probe now binds on the other side of the Not I site. Xba I alone
-              still gives 4.2 kb, but when Not I cuts, the probe sees a 3.3 kb
-              fragment.
-            </p>
-          </section>
-          <div className="exo-cases">{CASES.slice(5, 7).map((c, i) => renderCase(c, i + 5))}</div>
-
-          <section className="pws-intro">
-            <h3>Cases 8 to 10: Prader-Willi syndrome</h3>
-            <p>
-              Prader-Willi syndrome involves the same region of chromosome 15 as
-              Angelman syndrome, but the roles of the parents are swapped. The genes
-              involved (such as SNRPN) are active only on the paternal chromosome; on
-              the maternal chromosome they are methylated and silent. A child with no
-              working paternal copy has Prader-Willi syndrome: weak muscle tone at
-              birth, then an uncontrollable appetite. The molecular causes mirror
-              those of Angelman syndrome. Use what you learned to complete these three
-              cases. Cases 8 and 9 use the standard probe, case 10 the reverse probe.
-            </p>
-          </section>
-          <div className="exo-cases">{CASES.slice(7).map((c, i) => renderCase(c, i + 7))}</div>
-
-          <h2 className="part-title">Part 3 · Build the diagnosis map</h2>
-          <p className="part-intro">
-            Each diagnosis is identified by one Southern blot observation and one
-            microsatellite observation. Click an observation, then a diagnosis, to
-            link them (or the other way round). Click the same pair again to remove
-            the link. An observation can lead to several diagnoses.
-          </p>
-          <LinkGraph
-            links={links}
-            onToggle={toggleLink}
-            locked={submitted}
-            sbOrder={sbOrder}
-            msOrder={msOrder}
-          />
-          {submitted && (
-            <p className="graph-legend">
-              <span className="lg ok">correct link</span>
-              <span className="lg ko">wrong link</span>
-              <span className="lg missed">missing link</span>
-            </p>
-          )}
+            <LinkGraph
+              links={links}
+              onToggle={toggleLink}
+              locked={submitted}
+              sbOrder={sbOrder}
+              msOrder={msOrder}
+            />
+            {submitted && (
+              <p className="graph-legend">
+                <span className="lg ok">correct link</span>
+                <span className="lg ko">wrong link</span>
+                <span className="lg missed">missing link</span>
+              </p>
+            )}
+          </div>
 
           {!submitted ? (
             <div className="exo-actions">
@@ -815,8 +887,9 @@ function Exam() {
           ) : (
             <>
               <p className="exo-score" role="status">
-                Part 1: {quizScore} / {QUIZ.length} points · Part 2: {part1Score} / {CASES.length}{' '}
-                correct · Part 3: {graphCorrect} / {CORRECT_LINKS.size} links found, {graphWrong} wrong
+                Total: {examScore} / {EXAM_TOTAL} points · Part 1: {quizScore * POINTS} / {QUIZ.length * POINTS} · Part 2:{' '}
+                {part1Score * POINTS} / {CASES.length * POINTS} · Part 3: {graphScore * POINTS} / {GRAPH_TOTAL * POINTS} ({graphCorrect}{' '}
+                correct, {graphWrong} wrong)
               </p>
               <button className="cta" type="button" onClick={handleFinish}>
                 Finish
