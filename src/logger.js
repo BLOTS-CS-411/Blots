@@ -8,7 +8,7 @@ const store = (key, fallback) => {
   return v
 }
 
-function getIdentity() {
+export function getIdentity() {
   const participant = store('p', 'unknown')
   const condition = store('c', 'B') //AI is default
   const sessionId = store('sid', `${participant}_${condition}_${Date.now().toString(36)}`)
@@ -57,6 +57,8 @@ function summaryFor(type, data) {
         exam: {
           completed: true,
           submittedAt: serverTimestamp(),
+          examScore: data.examScore,
+          examTotal: data.examTotal,
           quizScore: data.quizScore,
           quizTotal: data.quizTotal,
           quizAnswers: data.quizAnswers,
