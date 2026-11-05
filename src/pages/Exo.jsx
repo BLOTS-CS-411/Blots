@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { logEvent, getCondition } from '../logger'
+import { countErasure, countMove, enterPhase, recordCheck, recordScore, trackEvent } from '../tracker'
 import { useNavigate } from 'react-router-dom'
 import './Exo.css'
 
@@ -224,6 +225,8 @@ function Exo() {
   const score = order.filter((id) => picks[id] === CASES[id].answer).length
 
   const pick = (id, key) => {
+    if (key) countMove(`exo.case${id}`)
+    else countErasure(`exo.case${id}`)
     setChecked(false)
     setPicks((p) => {
       const next = { ...p }
@@ -244,6 +247,8 @@ function Exo() {
   const handleCheck = () => {
     setChecked(true)
     logEvent('check_answers', { score, total: CASES.length })
+    enterPhase('review') // the correction or the chatbot starts here, in both versions
+    recordCheck('exo', { score, total: CASES.length })
     if (!aiEnabled) return   // version A: no chatbot
 
     // Ask about a wrong answer if there is one, otherwise pick any case at random
@@ -277,6 +282,7 @@ function Exo() {
     setChat((c) => ({ ...c, messages: history, pending: true }))
     setDraft('')
     logEvent('chatbot_message', { length: text.length })
+    trackEvent('exo.chat', 'send', { length: text.length, case: chat.asked?.caseId ?? null })
 
     const asked = chat.asked
     const selectedKey = asked ? picks[asked.caseId] : null
@@ -302,6 +308,7 @@ function Exo() {
       const data = await r.json()
       reply = data.reply || data.error || reply
       if (data.reply) {
+        trackEvent('exo.chat', 'reply', { hintScore: data.hint?.score ?? null })
         logEvent('chatbot_reply', {
           case: asked?.letter ?? null,
           caseId: asked?.caseId ?? null,
@@ -326,6 +333,18 @@ function Exo() {
       finalScore: score,
       total: CASES.length,
       totalSeconds: Math.round((Date.now() - startTime.current) / 1000),
+    })
+    recordScore('exo', {
+      finalScore: score,
+      total: CASES.length,
+      chatMessages: chat.messages.filter((m) => m.from === 'user').length,
+      // Keyed by the stable case id: the order shown on screen is shuffled
+      cases: Object.fromEntries(
+        order.map((id, n) => [
+          `case${id}`,
+          { shownAs: LETTERS[n], given: picks[id], correct: picks[id] === CASES[id].answer },
+        ])
+      ),
     })
     navigate('/exam')
   }
@@ -395,6 +414,7 @@ function Exo() {
                   <label className="exo-pick">
                     <span>Interpretation</span>
                     <select
+                      data-track={`exo.case${id}.select`}
                       value={picks[id] || ''}
                       onChange={(e) => pick(id, e.target.value)}
                     >
